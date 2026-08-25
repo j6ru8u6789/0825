@@ -18,7 +18,7 @@
       color: #333; 
       font-size: 14px;
     }
-    .container { max-width: 1000px; margin: 0 auto; }
+    .container { max-width: 1050px; margin: 0 auto; }
     h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
     
     .card { 
@@ -53,6 +53,17 @@
     .status-expired { background-color: #ffebee; color: #c62828; font-weight: bold; }
     .status-warning { background-color: #fff8e1; color: #f57f17; font-weight: bold; }
     
+    /* 圖片縮圖樣式 */
+    .item-img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid #eee;
+      background: #fafafa;
+      display: block;
+    }
+
     /* 按鈕樣式 */
     .btn-action { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
     .btn-edit { background: #2196f3; }
@@ -109,6 +120,7 @@
     <table>
       <thead>
         <tr>
+          <th>圖片</th>
           <th class="sortable" onclick="setSort('category')">種類 <span id="sort-category">⇅</span></th>
           <th class="sortable" onclick="setSort('name')">品牌 / 品名 <span id="sort-name">⇅</span></th>
           <th>規格/容量</th>
@@ -128,7 +140,6 @@
   let sortField = 'category';
   let sortAsc = true;
 
-  // 定義種類排定的順序
   const categoryOrder = {
     '化妝水': 1,
     '精華液': 2,
@@ -138,33 +149,53 @@
     '其他': 6
   };
 
-  // 格式化容量顯示 (只純數字就補上 ml)
   function formatVolume(val) {
     if (!val || val === '-') return '-';
-    // 若已經包含字母或中文（舊資料相容），則直接返回，否則補上 ml
     const cleanVal = String(val).replace(/ml/gi, '').trim();
     return cleanVal ? `${cleanVal} ml` : '-';
   }
 
-  // 取得純容量數字（用於編輯框）
   function getRawVolumeNum(val) {
     if (!val || val === '-') return '';
     return String(val).replace(/[^0-9.]/g, '');
   }
 
-  document.getElementById('itemForm').addEventListener('submit', function(e) {
+  // 自動依據品牌品名抓取網路圖片
+  async function fetchImage(keyword) {
+    try {
+      const query = encodeURIComponent(`${keyword} 化妝品`);
+      const res = await fetch(`https://duckduckgo-image-search-api.vercel.app/api/search?q=${query}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        return data[0].image;
+      }
+    } catch (err) {
+      console.log('圖片搜尋失敗，使用預設圖片:', err);
+    }
+    return `https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60`;
+  }
+
+  document.getElementById('itemForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+    const brand = document.getElementById('brand').value.trim();
+    const name = document.getElementById('name').value.trim();
     const rawVol = document.getElementById('volume').value.trim();
+
+    // 抓取圖片網址
+    const imageUrl = await fetchImage(`${brand} ${name}`);
+
     const newItem = {
       id: Date.now(),
-      brand: document.getElementById('brand').value,
-      name: document.getElementById('name').value,
+      brand: brand,
+      name: name,
       category: document.getElementById('category').value,
       spec: document.getElementById('spec').value,
       volume: rawVol ? `${rawVol} ml` : '-',
       quantity: parseInt(document.getElementById('quantity').value),
-      expiry: document.getElementById('expiry').value
+      expiry: document.getElementById('expiry').value,
+      imageUrl: imageUrl
     };
+
     items.push(newItem);
     saveAndRender();
     this.reset();
@@ -175,11 +206,18 @@
     renderItems();
   }
 
-  function saveEdit(id) {
+  async function saveEdit(id) {
     const item = items.find(i => i.id === id);
     if (item) {
-      item.brand = document.getElementById(`edit-brand-${id}`).value;
-      item.name = document.getElementById(`edit-name-${id}`).value;
+      const newBrand = document.getElementById(`edit-brand-${id}`).value.trim();
+      const newName = document.getElementById(`edit-name-${id}`).value.trim();
+
+      if (newBrand !== item.brand || newName !== item.name) {
+        item.imageUrl = await fetchImage(`${newBrand} ${newName}`);
+      }
+
+      item.brand = newBrand;
+      item.name = newName;
       item.category = document.getElementById(`edit-cat-${id}`).value;
       item.spec = document.getElementById(`edit-spec-${id}`).value;
       
@@ -221,15 +259,10 @@
     const search = document.getElementById('searchInput').value.toLowerCase();
     const filterSpec = document.getElementById('filterSpec').value;
     
-    // 更新排序圖示
     ['category', 'name', 'expiry'].forEach(f => {
       const el = document.getElementById(`sort-${f}`);
       if (el) {
-        if (sortField === f) {
-          el.innerText = sortAsc ? '▲' : '▼';
-        } else {
-          el.innerText = '⇅';
-        }
+        el.innerText = (sortField === f) ? (sortAsc ? '▲' : '▼') : '⇅';
       }
     });
 
@@ -238,7 +271,6 @@
 
     list.innerHTML = '';
 
-    // 1. 篩選
     let filtered = items.filter(item => {
       if (item.category === '乳液/面霜') item.category = '乳液';
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
@@ -246,7 +278,6 @@
       return matchSearch && matchSpec;
     });
 
-    // 2. 排序
     filtered.sort((a, b) => {
       let result = 0;
       if (sortField === 'category') {
@@ -261,7 +292,6 @@
       return sortAsc ? result : -result;
     });
 
-    // 3. 渲染列表
     filtered.forEach(item => {
       const isEditing = (item.id === editingId);
       const expDate = new Date(item.expiry);
@@ -289,10 +319,12 @@
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
       const formattedVol = formatVolume(item.volume);
       const rawVolNum = getRawVolumeNum(item.volume);
+      const imgSrc = item.imageUrl || `https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60`;
 
       if (isEditing) {
         list.innerHTML += `
           <tr>
+            <td><img src="${imgSrc}" class="item-img" alt="商品圖"></td>
             <td>
               <select id="edit-cat-${item.id}">
                 <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
@@ -330,6 +362,7 @@
       } else {
         list.innerHTML += `
           <tr class="${statusClass}">
+            <td><img src="${imgSrc}" class="item-img" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60'"></td>
             <td><strong>${item.category}</strong></td>
             <td><strong>${item.brand}</strong><br>${item.name}</td>
             <td><span class="badge ${specBadge}">${item.spec}</span> <br><small>${formattedVol}</small></td>
