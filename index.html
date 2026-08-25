@@ -14,22 +14,22 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       background: var(--bg); 
       margin: 0; 
-      padding: 20px; 
+      padding: 15px; 
       color: #333; 
       font-size: 14px;
     }
     .container { max-width: 1050px; margin: 0 auto; }
-    h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+    h1 { text-align: center; color: var(--primary); margin-bottom: 15px; font-size: 22px; }
     
     .card { 
       background: white; 
-      padding: 20px; 
+      padding: 16px; 
       border-radius: 12px; 
       box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-      margin-bottom: 20px; 
+      margin-bottom: 15px; 
     }
 
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
     input, select, button { 
       padding: 10px; 
       border: 1px solid #ddd; 
@@ -40,39 +40,31 @@
     }
     button.btn-add { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
     button.btn-add:hover { opacity: 0.9; }
-    .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 15px; }
     
     /* 備份按鈕區塊 */
     .backup-bar {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       justify-content: flex-end;
       margin-bottom: 15px;
     }
     .btn-backup {
       width: auto;
-      padding: 8px 14px;
+      padding: 6px 12px;
       font-size: 12px;
       background: #795548;
       color: white;
       border: none;
       cursor: pointer;
+      border-radius: 6px;
     }
 
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
-    th { background: #f8f8f8; color: #555; }
-    th.sortable { cursor: pointer; user-select: none; }
-    th.sortable:hover { background: #eee; }
-    .badge { padding: 3px 6px; border-radius: 8px; font-size: 11px; font-weight: bold; display: inline-block; margin-left: 4px; }
-    .badge-full { background: #e3f2fd; color: #1976d2; }
-    .badge-sample { background: #f3e5f5; color: #7b1fa2; }
-    .status-expired { background-color: #ffebee; color: #c62828; font-weight: bold; }
-    .status-warning { background-color: #fff8e1; color: #f57f17; font-weight: bold; }
-    
+    /* 圖片縮圖樣式 */
     .item-img {
-      width: 55px;
-      height: 55px;
+      width: 60px;
+      height: 60px;
       object-fit: cover;
       border-radius: 8px;
       border: 1px solid #eee;
@@ -82,12 +74,81 @@
       justify-content: center;
       font-size: 11px;
       color: #999;
+      flex-shrink: 0;
     }
+
+    /* 標籤樣式 */
+    .badge { padding: 3px 6px; border-radius: 6px; font-size: 11px; font-weight: bold; display: inline-block; }
+    .badge-full { background: #e3f2fd; color: #1976d2; }
+    .badge-sample { background: #f3e5f5; color: #7b1fa2; }
+    .badge-cat { background: #fff3e0; color: #e65100; margin-right: 4px; }
+    
+    .status-expired { background-color: #ffebee !important; border-left: 5px solid #c62828 !important; }
+    .status-warning { background-color: #fff8e1 !important; border-left: 5px solid #f57f17 !important; }
 
     .btn-action { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
     .btn-edit { background: #2196f3; }
     .btn-save { background: #4caf50; }
     .btn-delete { background: #ff5252; }
+
+    /* 電腦版表格樣式 (預設) */
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+    th { background: #f8f8f8; color: #555; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { background: #eee; }
+
+    /* 📱 手機版專屬 RWD 響應式佈局 (卡片化) */
+    @media (max-width: 600px) {
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; } /* 隱藏傳統表頭 */
+
+      tr {
+        background: white;
+        margin-bottom: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid #f0f0f0;
+      }
+
+      td {
+        padding: 4px 0;
+        border: none;
+      }
+
+      /* 手機版卡片內部排版 */
+      .mobile-card-header {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .mobile-title-area {
+        flex: 1;
+      }
+
+      .mobile-meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 6px;
+        font-size: 13px;
+        color: #555;
+        background: #f9f9f9;
+        padding: 6px 10px;
+        border-radius: 6px;
+      }
+
+      .mobile-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed #eee;
+      }
+    }
   </style>
 </head>
 <body>
@@ -97,7 +158,7 @@
 
   <!-- 新增商品表單 -->
   <div class="card">
-    <h3>➕ 新增品項</h3>
+    <h3 style="margin-top:0;">➕ 新增品項</h3>
     <form id="itemForm">
       <div class="form-grid">
         <input type="text" id="brand" placeholder="品牌 (例: Lancôme)" required>
@@ -116,10 +177,10 @@
           <option value="試用包">試用包</option>
           <option value="小樣">小樣</option>
         </select>
-        <input type="text" id="volume" placeholder="容量/單位 (例: 150ml 或 50g)">
+        <input type="text" id="volume" placeholder="容量/單位 (例: 150ml)">
         <input type="number" id="quantity" placeholder="數量" value="1" min="1" required>
         <input type="date" id="expiry" required>
-        <input type="url" id="imageUrl" placeholder="圖片網址 (貼上圖片連結)">
+        <input type="url" id="imageUrl" placeholder="圖片網址 (貼上連結)">
       </div>
       <button type="submit" class="btn-add">新增至庫存</button>
     </form>
@@ -127,8 +188,8 @@
 
   <!-- 備份與資料轉移按鈕 -->
   <div class="backup-bar">
-    <button class="btn-backup" onclick="exportData()">📤 匯出資料 (備份至檔案)</button>
-    <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 匯入資料 (從檔案載入)</button>
+    <button class="btn-backup" onclick="exportData()">📤 匯出資料</button>
+    <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 匯入資料</button>
     <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
   </div>
 
@@ -144,7 +205,7 @@
   </div>
 
   <!-- 清單列表 -->
-  <div class="card" style="padding: 0; overflow-x: auto;">
+  <div class="card" style="padding: 0; background: transparent; box-shadow: none;">
     <table>
       <thead>
         <tr>
@@ -200,7 +261,6 @@
     this.reset();
   });
 
-  // 匯出資料成 JSON 檔案
   function exportData() {
     if (items.length === 0) {
       alert('目前沒有任何資料可匯出！');
@@ -215,7 +275,6 @@
     downloadAnchor.remove();
   }
 
-  // 從 JSON 檔案匯入資料
   function importData(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -287,7 +346,7 @@
     renderItems();
   }
 
-  function handleImgError(el, id) {
+  function handleImgError(el) {
     const parent = el.parentElement;
     parent.innerHTML = `<div class="item-img" style="color:#e53935;">連結失效</div>`;
   }
@@ -296,6 +355,7 @@
     const list = document.getElementById('itemList');
     const search = document.getElementById('searchInput').value.toLowerCase();
     const filterSpec = document.getElementById('filterSpec').value;
+    const isMobile = window.innerWidth <= 600;
     
     ['category', 'name', 'expiry'].forEach(f => {
       const el = document.getElementById(`sort-${f}`);
@@ -345,85 +405,120 @@
 
       if (diffDays < 0) {
         statusClass = 'status-expired';
-        daysNote = `<br><small style="color:#c62828;">已過期 ${Math.abs(diffDays)} 天</small>`;
+        daysNote = `<span style="color:#c62828; font-weight:bold;">已過期 ${Math.abs(diffDays)} 天</span>`;
       } else if (diffDays === 0) {
         statusClass = 'status-warning';
-        daysNote = `<br><small style="color:#f57f17;">今天到期！</small>`;
+        daysNote = `<span style="color:#f57f17; font-weight:bold;">今天到期！</span>`;
       } else if (diffDays <= 90) {
         statusClass = 'status-warning';
-        daysNote = `<br><small style="color:#f57f17;">剩餘 ${diffDays} 天過期</small>`;
+        daysNote = `<span style="color:#f57f17; font-weight:bold;">剩 ${diffDays} 天</span>`;
       } else {
-        daysNote = `<br><small style="color:#666;">剩餘 ${diffDays} 天過期</small>`;
+        daysNote = `<span style="color:#666;">剩 ${diffDays} 天</span>`;
       }
 
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
       
       const imgDisplay = item.imageUrl 
-        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this, ${item.id})">` 
+        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this)">` 
         : `<div class="item-img">無照片</div>`;
 
       if (isEditing) {
+        // 編輯模式
         list.innerHTML += `
-          <tr>
-            <td>
-              <div style="margin-bottom:4px;">${imgDisplay}</div>
-              <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="貼上新圖片網址" style="width:120px; font-size:11px;">
-            </td>
-            <td>
-              <select id="edit-cat-${item.id}">
-                <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
-                <option value="精華液" ${item.category==='精華液'?'selected':''}>精華液</option>
-                <option value="乳液" ${item.category==='乳液'?'selected':''}>乳液</option>
-                <option value="洗面乳" ${item.category==='洗面乳'?'selected':''}>洗面乳</option>
-                <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
-                <option value="底妝/彩妝" ${item.category==='底妝/彩妝'?'selected':''}>底妝/彩妝</option>
-                <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
-              </select>
-            </td>
-            <td>
-              <input type="text" id="edit-brand-${item.id}" value="${item.brand}" style="margin-bottom:4px;" placeholder="品牌">
-              <input type="text" id="edit-name-${item.id}" value="${item.name}" placeholder="品名">
-              <select id="edit-spec-${item.id}" style="margin-top:4px;">
-                <option value="正貨" ${item.spec==='正貨'?'selected':''}>正貨</option>
-                <option value="試用包" ${item.spec==='試用包'?'selected':''}>試用包</option>
-                <option value="小樣" ${item.spec==='小樣'?'selected':''}>小樣</option>
-              </select>
-            </td>
-            <td>
-              <input type="text" id="edit-vol-${item.id}" value="${item.volume === '-' ? '' : item.volume}" placeholder="容量 (例: 150ml)">
-            </td>
-            <td>
-              <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" style="width:70px;">
-            </td>
-            <td>
-              <input type="date" id="edit-exp-${item.id}" value="${item.expiry}">
-            </td>
-            <td>
-              <button class="btn-action btn-save" onclick="saveEdit(${item.id})">💾 儲存</button>
-              <button class="btn-action btn-delete" onclick="deleteItem(${item.id})">🗑️ 刪除</button>
+          <tr class="${statusClass}">
+            <td colspan="7">
+              <div style="display:grid; gap:8px;">
+                <div style="display:flex; gap:10px; align-items:center;">
+                  ${imgDisplay}
+                  <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="圖片網址" style="font-size:12px;">
+                </div>
+                <div style="display:flex; gap:8px;">
+                  <select id="edit-cat-${item.id}">
+                    <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
+                    <option value="精華液" ${item.category==='精華液'?'selected':''}>精華液</option>
+                    <option value="乳液" ${item.category==='乳液'?'selected':''}>乳液</option>
+                    <option value="洗面乳" ${item.category==='洗面乳'?'selected':''}>洗面乳</option>
+                    <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
+                    <option value="底妝/彩妝" ${item.category==='底妝/彩妝'?'selected':''}>底妝/彩妝</option>
+                    <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
+                  </select>
+                  <select id="edit-spec-${item.id}">
+                    <option value="正貨" ${item.spec==='正貨'?'selected':''}>正貨</option>
+                    <option value="試用包" ${item.spec==='試用包'?'selected':''}>試用包</option>
+                    <option value="小樣" ${item.spec==='小樣'?'selected':''}>小樣</option>
+                  </select>
+                </div>
+                <input type="text" id="edit-brand-${item.id}" value="${item.brand}" placeholder="品牌">
+                <input type="text" id="edit-name-${item.id}" value="${item.name}" placeholder="品名">
+                <div style="display:flex; gap:8px;">
+                  <input type="text" id="edit-vol-${item.id}" value="${item.volume === '-' ? '' : item.volume}" placeholder="容量 (例: 150ml)">
+                  <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" placeholder="數量" style="width:90px;">
+                </div>
+                <input type="date" id="edit-exp-${item.id}" value="${item.expiry}">
+                <div style="text-align:right; margin-top:4px;">
+                  <button class="btn-action btn-save" onclick="saveEdit(${item.id})">💾 儲存</button>
+                  <button class="btn-action btn-delete" onclick="deleteItem(${item.id})">🗑️ 刪除</button>
+                </div>
+              </div>
             </td>
           </tr>
         `;
       } else {
-        list.innerHTML += `
-          <tr class="${statusClass}">
-            <td>${imgDisplay}</td>
-            <td><strong>${item.category}</strong></td>
-            <td>
-              <strong>${item.brand}</strong><br>
-              ${item.name} <span class="badge ${specBadge}">${item.spec}</span>
-            </td>
-            <td>${item.volume}</td>
-            <td>${item.quantity}</td>
-            <td>${item.expiry}${daysNote}</td>
-            <td>
-              <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯</button>
-            </td>
-          </tr>
-        `;
+        // 正常檢視模式（自動兼顧電腦與手機）
+        if (isMobile) {
+          // 📱 手機版專屬卡片 HTML
+          list.innerHTML += `
+            <tr class="${statusClass}">
+              <td>
+                <div class="mobile-card-header">
+                  ${imgDisplay}
+                  <div class="mobile-title-area">
+                    <div>
+                      <span class="badge badge-cat">${item.category}</span>
+                      <span class="badge ${specBadge}">${item.spec}</span>
+                    </div>
+                    <div style="font-weight:bold; font-size:15px; margin-top:2px;">${item.brand}</div>
+                    <div style="color:#555;">${item.name}</div>
+                  </div>
+                </div>
+                <div class="mobile-meta-row">
+                  <div>容量: <strong>${item.volume}</strong> | 數量: <strong>${item.quantity}</strong></div>
+                  <div>${daysNote}</div>
+                </div>
+                <div class="mobile-meta-row" style="background:transparent; padding:2px 0;">
+                  <small style="color:#888;">效期：${item.expiry}</small>
+                </div>
+                <div class="mobile-actions">
+                  <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯品項</button>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          // 💻 電腦版表格 HTML
+          list.innerHTML += `
+            <tr class="${statusClass}">
+              <td>${imgDisplay}</td>
+              <td><strong>${item.category}</strong></td>
+              <td>
+                <strong>${item.brand}</strong><br>
+                ${item.name} <span class="badge ${specBadge}">${item.spec}</span>
+              </td>
+              <td>${item.volume}</td>
+              <td>${item.quantity}</td>
+              <td>${item.expiry} <br><small>${daysNote}</small></td>
+              <td>
+                <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯</button>
+              </td>
+            </tr>
+          `;
+        }
       }
     });
   }
+
+  // 監聽螢幕寬度變化自動切換排版
+  window.addEventListener('resize', renderItems);
 
   renderItems();
 </script>
