@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Joyce化妝品庫存</title>
+  <style>
+    :root {
+      --primary: #e91e63;
+      --bg: #fcf4f6;
+    }
+
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background: var(--bg); 
+      margin: 0; 
+      padding: 20px; 
+      color: #333; 
+      font-size: 14px;
+    }
+    .container { max-width: 1000px; margin: 0 auto; }
+    h1 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+    
+    .card { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+      margin-bottom: 20px; 
+    }
+
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+    input, select, button { 
+      padding: 10px; 
+      border: 1px solid #ddd; 
+      border-radius: 6px; 
+      font-size: 14px; 
+      width: 100%; 
+      box-sizing: border-box; 
+    }
+    button.btn-add { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+    button.btn-add:hover { opacity: 0.9; }
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
+    th { background: #f8f8f8; color: #555; }
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .badge-full { background: #e3f2fd; color: #1976d2; }
+    .badge-sample { background: #f3e5f5; color: #7b1fa2; }
+    .status-expired { background-color: #ffebee; color: #c62828; font-weight: bold; }
+    .status-warning { background-color: #fff8e1; color: #f57f17; font-weight: bold; }
+    .qty-btn { width: 28px; height: 28px; padding: 0; margin: 0 4px; cursor: pointer; display: inline-block; }
+    
+    /* 按鈕樣式 */
+    .btn-action { padding: 6px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
+    .btn-edit { background: #2196f3; }
+    .btn-save { background: #4caf50; }
+    .btn-delete { background: #ff5252; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>💄 Joyce化妝品庫存</h1>
+
+  <!-- 新增商品表單 -->
+  <div class="card">
+    <h3>➕ 新增品項</h3>
+    <form id="itemForm">
+      <div class="form-grid">
+        <input type="text" id="brand" placeholder="品牌 (例: Lancôme)" required>
+        <input type="text" id="name" placeholder="品名 (例: 極光水)" required>
+        <select id="category">
+          <option value="化妝水">化妝水</option>
+          <option value="精華液">精華液</option>
+          <option value="乳液/面霜">乳液/面霜</option>
+          <option value="卸妝/清潔">卸妝/清潔</option>
+          <option value="底妝/彩妝">底妝/彩妝</option>
+          <option value="其他">其他</option>
+        </select>
+        <select id="spec">
+          <option value="正貨">正貨</option>
+          <option value="試用包">試用包</option>
+          <option value="小樣">小樣</option>
+        </select>
+        <input type="text" id="volume" placeholder="容量 (例: 150ml / 1.5ml)">
+        <input type="number" id="quantity" placeholder="數量" value="1" min="1" required>
+        <input type="date" id="expiry" required>
+      </div>
+      <button type="submit" class="btn-add">新增至庫存</button>
+    </form>
+  </div>
+
+  <!-- 篩選與搜尋 -->
+  <div class="filter-bar">
+    <input type="text" id="searchInput" placeholder="🔍 搜尋品牌或品名..." oninput="renderItems()" style="flex: 2;">
+    <select id="filterSpec" onchange="renderItems()" style="flex: 1;">
+      <option value="ALL">全部規格</option>
+      <option value="正貨">僅看正貨</option>
+      <option value="試用包">僅看試用包</option>
+      <option value="小樣">僅看小樣</option>
+    </select>
+  </div>
+
+  <!-- 清單列表 -->
+  <div class="card" style="padding: 0; overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>種類</th>
+          <th>品牌 / 品名</th>
+          <th>規格/容量</th>
+          <th>數量</th>
+          <th>有效期限 / 倒數天數</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="itemList"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  let items = JSON.parse(localStorage.getItem('cosmetic_items')) || [];
+  let editingId = null;
+
+  // 定義種類排定的順序
+  const categoryOrder = {
+    '化妝水': 1,
+    '精華液': 2,
+    '乳液/面霜': 3,
+    '卸妝/清潔': 4,
+    '底妝/彩妝': 5,
+    '其他': 6
+  };
+
+  document.getElementById('itemForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const newItem = {
+      id: Date.now(),
+      brand: document.getElementById('brand').value,
+      name: document.getElementById('name').value,
+      category: document.getElementById('category').value,
+      spec: document.getElementById('spec').value,
+      volume: document.getElementById('volume').value || '-',
+      quantity: parseInt(document.getElementById('quantity').value),
+      expiry: document.getElementById('expiry').value
+    };
+    items.push(newItem);
+    saveAndRender();
+    this.reset();
+  });
+
+  function updateQty(id, change) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      item.quantity += change;
+      if (item.quantity <= 0) {
+        items = items.filter(i => i.id !== id);
+      }
+      saveAndRender();
+    }
+  }
+
+  function startEdit(id) {
+    editingId = id;
+    renderItems();
+  }
+
+  function saveEdit(id) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      item.brand = document.getElementById(`edit-brand-${id}`).value;
+      item.name = document.getElementById(`edit-name-${id}`).value;
+      item.category = document.getElementById(`edit-cat-${id}`).value;
+      item.spec = document.getElementById(`edit-spec-${id}`).value;
+      item.volume = document.getElementById(`edit-vol-${id}`).value;
+      item.quantity = parseInt(document.getElementById(`edit-qty-${id}`).value);
+      item.expiry = document.getElementById(`edit-exp-${id}`).value;
+    }
+    editingId = null;
+    saveAndRender();
+  }
+
+  function deleteItem(id) {
+    if (confirm('確定要刪除這筆品項嗎？')) {
+      items = items.filter(i => i.id !== id);
+      saveAndRender();
+    }
+  }
+
+  function saveAndRender() {
+    localStorage.setItem('cosmetic_items', JSON.stringify(items));
+    renderItems();
+  }
+
+  function renderItems() {
+    const list = document.getElementById('itemList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const filterSpec = document.getElementById('filterSpec').value;
+    
+    // 將今天日期歸零時分秒，計算天數更準確
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    list.innerHTML = '';
+
+    // 1. 篩選
+    let filtered = items.filter(item => {
+      const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
+      const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
+      return matchSearch && matchSpec;
+    });
+
+    // 2. 依照「種類」排序（若種類相同，再依有效期限排序）
+    filtered.sort((a, b) => {
+      const orderA = categoryOrder[a.category] || 99;
+      const orderB = categoryOrder[b.category] || 99;
+      
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return new Date(a.expiry) - new Date(b.expiry);
+    });
+
+    // 3. 渲染列表
+    filtered.forEach(item => {
+      const isEditing = (item.id === editingId);
+      const expDate = new Date(item.expiry);
+      expDate.setHours(0, 0, 0, 0);
+
+      // 計算天數差異
+      const diffTime = expDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      let statusClass = '';
+      let daysNote = '';
+
+      if (diffDays < 0) {
+        statusClass = 'status-expired';
+        daysNote = `<br><small style="color:#c62828;">已過期 ${Math.abs(diffDays)} 天</small>`;
+      } else if (diffDays === 0) {
+        statusClass = 'status-warning';
+        daysNote = `<br><small style="color:#f57f17;">今天到期！</small>`;
+      } else if (diffDays <= 90) { // 90 天（約 3 個月）內提醒
+        statusClass = 'status-warning';
+        daysNote = `<br><small style="color:#f57f17;">剩餘 ${diffDays} 天過期</small>`;
+      } else {
+        daysNote = `<br><small style="color:#666;">剩餘 ${diffDays} 天過期</small>`;
+      }
+
+      const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
+
+      if (isEditing) {
+        list.innerHTML += `
+          <tr>
+            <td>
+              <select id="edit-cat-${item.id}">
+                <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
+                <option value="精華液" ${item.category==='精華液'?'selected':''}>精華液</option>
+                <option value="乳液/面霜" ${item.category==='乳液/面霜'?'selected':''}>乳液/面霜</option>
+                <option value="卸妝/清潔" ${item.category==='卸妝/清潔'?'selected':''}>卸妝/清潔</option>
+                <option value="底妝/彩妝" ${item.category==='底妝/彩妝'?'selected':''}>底妝/彩妝</option>
+                <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
+              </select>
+            </td>
+            <td>
+              <input type="text" id="edit-brand-${item.id}" value="${item.brand}" style="margin-bottom:4px;" placeholder="品牌">
+              <input type="text" id="edit-name-${item.id}" value="${item.name}" placeholder="品名">
+            </td>
+            <td>
+              <select id="edit-spec-${item.id}" style="margin-bottom:4px;">
+                <option value="正貨" ${item.spec==='正貨'?'selected':''}>正貨</option>
+                <option value="試用包" ${item.spec==='試用包'?'selected':''}>試用包</option>
+                <option value="小樣" ${item.spec==='小樣'?'selected':''}>小樣</option>
+              </select>
+              <input type="text" id="edit-vol-${item.id}" value="${item.volume}" placeholder="容量">
+            </td>
+            <td>
+              <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" style="width:60px;">
+            </td>
+            <td>
+              <input type="date" id="edit-exp-${item.id}" value="${item.expiry}">
+            </td>
+            <td>
+              <button class="btn-action btn-save" onclick="saveEdit(${item.id})">💾 儲存</button>
+            </td>
+          </tr>
+        `;
+      } else {
+        list.innerHTML += `
+          <tr class="${statusClass}">
+            <td><strong>${item.category}</strong></td>
+            <td><strong>${item.brand}</strong><br>${item.name}</td>
+            <td><span class="badge ${specBadge}">${item.spec}</span> <br><small>${item.volume}</small></td>
+            <td>
+              <button class="qty-btn" onclick="updateQty(${item.id}, -1)">-</button>
+              ${item.quantity}
+              <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+            </td>
+            <td>${item.expiry}${daysNote}</td>
+            <td>
+              <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯</button>
+              <button class="btn-action btn-delete" onclick="deleteItem(${item.id})">刪除</button>
+            </td>
+          </tr>
+        `;
+      }
+    });
+  }
+
+  renderItems();
+</script>
+</body>
+</html>
