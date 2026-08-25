@@ -111,6 +111,29 @@
       flex-shrink: 0;
     }
 
+    .img-error-btn {
+      width: 55px;
+      height: 55px;
+      border-radius: 8px;
+      border: 1px solid #ffcdd2;
+      background: #ffebee;
+      color: #c62828;
+      font-size: 10px;
+      font-weight: bold;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 2px;
+      text-align: center;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+    .img-error-btn:hover {
+      background: #ffcdd2;
+    }
+
     /* 標籤樣式 */
     .badge { padding: 2px 5px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
     .badge-full { background: #e3f2fd; color: #1976d2; }
@@ -267,7 +290,10 @@
 
   <!-- 篩選、搜尋與排序 -->
   <div class="filter-bar">
-    <input type="text" id="searchInput" placeholder="🔍 搜尋品牌/品名..." oninput="renderItems()" style="flex: 2; min-width: 130px;">
+    <div style="flex: 2; min-width: 130px; position: relative;">
+      <input type="text" id="searchInput" list="searchBrandOptions" placeholder="🔍 搜尋/選擇品牌品名..." oninput="renderItems()">
+      <datalist id="searchBrandOptions"></datalist>
+    </div>
     <select id="filterSpec" onchange="renderItems()" style="flex: 1; min-width: 90px;">
       <option value="ALL">全部規格</option>
       <option value="正貨">正貨</option>
@@ -323,9 +349,22 @@
 
   function updateBrandDatalist() {
     const datalist = document.getElementById('brandOptions');
+    const searchDatalist = document.getElementById('searchBrandOptions');
+    
     datalist.innerHTML = '';
-    customBrands.forEach(b => {
+    searchDatalist.innerHTML = '';
+
+    // 合併預設品牌與實際品項中出現過的品牌
+    const allBrandsSet = new Set([...customBrands]);
+    items.forEach(item => {
+      if (item.brand && item.brand.trim() !== '') {
+        allBrandsSet.add(item.brand.trim());
+      }
+    });
+
+    allBrandsSet.forEach(b => {
       datalist.innerHTML += `<option value="${b}"></option>`;
+      searchDatalist.innerHTML += `<option value="${b}"></option>`;
     });
   }
 
@@ -344,11 +383,9 @@
     const imgUrl = document.getElementById('imageUrl').value.trim();
     const brandName = document.getElementById('brand').value.trim();
 
-    // 動態記憶新品牌
     if (brandName && !customBrands.includes(brandName)) {
       customBrands.push(brandName);
       localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
-      updateBrandDatalist();
     }
 
     const newItem = {
@@ -364,6 +401,7 @@
     };
 
     items.push(newItem);
+    updateBrandDatalist();
     saveAndRender();
     this.reset();
   });
@@ -401,7 +439,6 @@
           if (confirm('匯入檔案將會覆蓋當前裝置上的資料，確定繼續嗎？')) {
             items = importedItems;
             
-            // 匯入時同步自動記錄所有品牌的歷史
             items.forEach(i => {
               if (i.brand && !customBrands.includes(i.brand)) {
                 customBrands.push(i.brand);
@@ -460,10 +497,10 @@
       if (newBrand && !customBrands.includes(newBrand)) {
         customBrands.push(newBrand);
         localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
-        updateBrandDatalist();
       }
     }
     editingId = null;
+    updateBrandDatalist();
     saveAndRender();
   }
 
@@ -471,6 +508,7 @@
     if (confirm('確定要刪除這筆品項嗎？')) {
       items = items.filter(i => i.id !== id);
       editingId = null;
+      updateBrandDatalist();
       saveAndRender();
     }
   }
@@ -497,9 +535,14 @@
     renderItems();
   }
 
-  function handleImgError(el) {
+  // 圖片載入失敗處理：顯示可直接點擊修改網址的按鈕
+  function handleImgError(el, id) {
     const parent = el.parentElement;
-    parent.innerHTML = `<div class="item-img" style="color:#e53935;">連結失效</div>`;
+    parent.innerHTML = `
+      <div class="img-error-btn" onclick="startEdit(${id})" title="點擊直接修改圖片網址">
+        ⚠️ 連結失效<br><span style="font-size:9px; text-decoration:underline;">(點此修改)</span>
+      </div>
+    `;
   }
 
   function renderItems() {
@@ -579,8 +622,8 @@
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
       
       const imgDisplay = item.imageUrl 
-        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this)">` 
-        : `<div class="item-img">無照片</div>`;
+        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this, ${item.id})">` 
+        : `<div class="item-img" onclick="startEdit(${item.id})" style="cursor:pointer;" title="點擊新增照片網址">無照片</div>`;
 
       if (isEditing) {
         list.innerHTML += `
@@ -589,7 +632,7 @@
               <div style="display:grid; gap:6px;">
                 <div style="display:flex; gap:8px; align-items:center;">
                   ${imgDisplay}
-                  <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="圖片網址" style="font-size:11px;">
+                  <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="貼上新的圖片網址..." style="font-size:12px; border:2px solid var(--primary);">
                 </div>
                 <div style="display:flex; gap:6px;">
                   <select id="edit-cat-${item.id}">
