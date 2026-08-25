@@ -289,7 +289,7 @@
             <option value="隔離霜">隔離霜</option>
             <option value="口紅">口紅</option>
             <option value="眼影">眼影</option>
-            <option value="棉片">棉片</option>
+            <option value="其他">其他</option>
           </select>
           <select id="spec">
             <option value="正貨">正貨</option>
@@ -297,7 +297,16 @@
             <option value="小樣">小樣</option>
           </select>
           <input type="text" id="volume" placeholder="容量 (未填單位預設ml)">
-          <input type="number" id="quantity" placeholder="數量" value="1" min="1" required>
+          <div style="display:flex; gap:4px;">
+            <input type="number" id="quantity" placeholder="數量" value="1" min="1" required style="flex:2;">
+            <select id="unit" style="flex:1;">
+              <option value="個">個</option>
+              <option value="瓶">瓶</option>
+              <option value="包">包</option>
+              <option value="條">條</option>
+              <option value="片">片</option>
+            </select>
+          </div>
           <input type="date" id="expiry" required>
           <input type="url" id="imageUrl" placeholder="圖片網址">
         </div>
@@ -359,7 +368,7 @@
   const categoryOrder = {
     '化妝水': 1, '精華液': 2, '乳液': 3, '洗面乳': 4,
     '卸妝水': 5, '去角質': 6, '面膜': 7, '隔離霜': 8,
-    '口紅': 9, '眼影': 10, '棉片': 11
+    '口紅': 9, '眼影': 10, '其他': 11
   };
 
   const skincareCategories = ['化妝水', '精華液', '乳液', '洗面乳', '卸妝水', '去角質', '面膜'];
@@ -413,6 +422,7 @@
       spec: document.getElementById('spec').value,
       volume: formatVolume(rawVol),
       quantity: parseInt(document.getElementById('quantity').value),
+      unit: document.getElementById('unit').value || '個',
       expiry: document.getElementById('expiry').value,
       imageUrl: imgUrl
     };
@@ -502,6 +512,7 @@
       item.volume = formatVolume(editVol);
       
       item.quantity = parseInt(document.getElementById(`edit-qty-${id}`).value);
+      item.unit = document.getElementById(`edit-unit-${id}`).value;
       item.expiry = document.getElementById(`edit-exp-${id}`).value;
       item.imageUrl = document.getElementById(`edit-img-${id}`).value.trim();
 
@@ -638,6 +649,7 @@
 
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
       const imgDisplay = getImgHTML(item);
+      const itemUnit = item.unit || '個';
 
       if (isEditing) {
         list.innerHTML += `
@@ -672,7 +684,14 @@
                 <input type="text" id="edit-name-${item.id}" value="${item.name}" placeholder="品名">
                 <div style="display:flex; gap:6px;">
                   <input type="text" id="edit-vol-${item.id}" value="${item.volume === '-' ? '' : item.volume}" placeholder="容量">
-                  <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" placeholder="數量" style="width:80px;">
+                  <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" placeholder="數量" style="width:70px;">
+                  <select id="edit-unit-${item.id}" style="width:70px;">
+                    <option value="個" ${itemUnit==='個'?'selected':''}>個</option>
+                    <option value="瓶" ${itemUnit==='瓶'?'selected':''}>瓶</option>
+                    <option value="包" ${itemUnit==='包'?'selected':''}>包</option>
+                    <option value="條" ${itemUnit==='條'?'selected':''}>條</option>
+                    <option value="片" ${itemUnit==='片'?'selected':''}>片</option>
+                  </select>
                 </div>
                 <input type="date" id="edit-exp-${item.id}" value="${item.expiry}">
                 <div style="text-align:right; margin-top:6px; display:flex; justify-content:flex-end; gap:6px;">
@@ -705,7 +724,7 @@
                 </div>
                 <div class="mobile-meta-row">
                   <div>容量: <strong>${item.volume}</strong></div>
-                  <div>數量: <span class="mobile-qty-text">${item.quantity}</span> 個/瓶</div>
+                  <div>數量: <span class="mobile-qty-text">${item.quantity}</span> ${itemUnit}</div>
                 </div>
                 <div class="mobile-expiry-row">
                   <div>效期：<strong>${expiryTextDisplay}</strong></div>
@@ -724,7 +743,7 @@
                 ${item.name} <span class="badge ${specBadge}">${item.spec}</span>
               </td>
               <td>${item.volume}</td>
-              <td><strong>${item.quantity}</strong> 個/瓶</td>
+              <td><strong>${item.quantity}</strong> ${itemUnit}</td>
               <td>${expiryTextDisplay} <br><small>${daysNote}</small></td>
               <td>
                 <button class="btn-icon" onclick="copyItem(${item.id})">📋 複製</button>
