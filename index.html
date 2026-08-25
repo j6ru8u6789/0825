@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Joyce化妝品庫存</title>
+
+  <!-- 📱 手機新增至主畫面時顯示的圖示 (請替換為你的鄭容和照片網址) -->
+  <link rel="apple-touch-icon" href="https://s.yimg.com/lo/mysterio/api/deecf22bc6c8dfa8769759f22110e8067bf0fd8caad04d7c1ef2754025c0f899/lightyear_networkapi/resizefill_w640%3Bquality_80%3Bformat_webp/https%3A%2F%2Fmedia.zenfs.com%2Fko%2Fmirrordaily_390%2Fc928005607eca6167e213582a1f56535">
+  <link rel="icon" type="image/png" href="https://s.yimg.com/lo/mysterio/api/deecf22bc6c8dfa8769759f22110e8067bf0fd8caad04d7c1ef2754025c0f899/lightyear_networkapi/resizefill_w640%3Bquality_80%3Bformat_webp/https%3A%2F%2Fmedia.zenfs.com%2Fko%2Fmirrordaily_390%2Fc928005607eca6167e213582a1f56535">
+
   <style>
     :root {
       --primary: #e91e63;
@@ -321,7 +326,6 @@
       <input type="text" id="searchInput" list="searchBrandOptions" placeholder="🔍 搜尋/選擇品牌品名..." oninput="renderItems()">
       <datalist id="searchBrandOptions"></datalist>
     </div>
-    <!-- 新增種類篩選選單 -->
     <select id="filterCategory" onchange="renderItems()" style="flex: 1; min-width: 90px;">
       <option value="ALL">全部種類</option>
       <option value="化妝水">化妝水</option>
