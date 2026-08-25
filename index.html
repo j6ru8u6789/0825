@@ -55,13 +55,17 @@
     
     /* 圖片縮圖樣式 */
     .item-img {
-      width: 50px;
-      height: 50px;
+      width: 55px;
+      height: 55px;
       object-fit: cover;
       border-radius: 8px;
       border: 1px solid #eee;
-      background: #fafafa;
-      display: block;
+      background: #f8f8f8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #999;
     }
 
     /* 按鈕樣式 */
@@ -99,6 +103,7 @@
         <input type="number" id="volume" step="any" placeholder="容量 (數字, 例: 150)">
         <input type="number" id="quantity" placeholder="數量" value="1" min="1" required>
         <input type="date" id="expiry" required>
+        <input type="file" id="imageInput" accept="image/*" title="選擇商品照片(可選)">
       </div>
       <button type="submit" class="btn-add">新增至庫存</button>
     </form>
@@ -120,7 +125,7 @@
     <table>
       <thead>
         <tr>
-          <th>圖片</th>
+          <th>照片</th>
           <th class="sortable" onclick="setSort('category')">種類 <span id="sort-category">⇅</span></th>
           <th class="sortable" onclick="setSort('name')">品牌 / 品名 <span id="sort-name">⇅</span></th>
           <th>規格/容量</th>
@@ -160,40 +165,62 @@
     return String(val).replace(/[^0-9.]/g, '');
   }
 
-  // 自動依據品牌品名抓取網路圖片
-  async function fetchImage(keyword) {
-    try {
-      const query = encodeURIComponent(`${keyword} 化妝品`);
-      const res = await fetch(`https://duckduckgo-image-search-api.vercel.app/api/search?q=${query}`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        return data[0].image;
+  // 將上傳的圖片壓縮並轉為 Base64
+  function readImageFile(file) {
+    return new Promise((resolve) => {
+      if (!file) {
+        resolve('');
+        return;
       }
-    } catch (err) {
-      console.log('圖片搜尋失敗，使用預設圖片:', err);
-    }
-    return `https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60`;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 200; // 限制圖片最大寬高 200px (縮小體積)
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height *= maxDim / width;
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width *= maxDim / height;
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7)); // 儲存為 70% 品質 Jpeg
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   document.getElementById('itemForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const brand = document.getElementById('brand').value.trim();
-    const name = document.getElementById('name').value.trim();
     const rawVol = document.getElementById('volume').value.trim();
-
-    // 抓取圖片網址
-    const imageUrl = await fetchImage(`${brand} ${name}`);
+    const imageFile = document.getElementById('imageInput').files[0];
+    const imageBase64 = await readImageFile(imageFile);
 
     const newItem = {
       id: Date.now(),
-      brand: brand,
-      name: name,
+      brand: document.getElementById('brand').value.trim(),
+      name: document.getElementById('name').value.trim(),
       category: document.getElementById('category').value,
       spec: document.getElementById('spec').value,
       volume: rawVol ? `${rawVol} ml` : '-',
       quantity: parseInt(document.getElementById('quantity').value),
       expiry: document.getElementById('expiry').value,
-      imageUrl: imageUrl
+      imageUrl: imageBase64
     };
 
     items.push(newItem);
@@ -209,15 +236,8 @@
   async function saveEdit(id) {
     const item = items.find(i => i.id === id);
     if (item) {
-      const newBrand = document.getElementById(`edit-brand-${id}`).value.trim();
-      const newName = document.getElementById(`edit-name-${id}`).value.trim();
-
-      if (newBrand !== item.brand || newName !== item.name) {
-        item.imageUrl = await fetchImage(`${newBrand} ${newName}`);
-      }
-
-      item.brand = newBrand;
-      item.name = newName;
+      item.brand = document.getElementById(`edit-brand-${id}`).value.trim();
+      item.name = document.getElementById(`edit-name-${id}`).value.trim();
       item.category = document.getElementById(`edit-cat-${id}`).value;
       item.spec = document.getElementById(`edit-spec-${id}`).value;
       
@@ -226,6 +246,11 @@
       
       item.quantity = parseInt(document.getElementById(`edit-qty-${id}`).value);
       item.expiry = document.getElementById(`edit-exp-${id}`).value;
+
+      const editImgFile = document.getElementById(`edit-img-${id}`).files[0];
+      if (editImgFile) {
+        item.imageUrl = await readImageFile(editImgFile);
+      }
     }
     editingId = null;
     saveAndRender();
@@ -240,7 +265,11 @@
   }
 
   function saveAndRender() {
-    localStorage.setItem('cosmetic_items', JSON.stringify(items));
+    try {
+      localStorage.setItem('cosmetic_items', JSON.stringify(items));
+    } catch (e) {
+      alert('儲存空間不足，請清除部分過期品項或選擇較小的圖片檔！');
+    }
     renderItems();
   }
 
@@ -319,12 +348,18 @@
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
       const formattedVol = formatVolume(item.volume);
       const rawVolNum = getRawVolumeNum(item.volume);
-      const imgSrc = item.imageUrl || `https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60`;
+      
+      const imgDisplay = item.imageUrl 
+        ? `<img src="${item.imageUrl}" class="item-img" alt="圖片">` 
+        : `<div class="item-img">無照片</div>`;
 
       if (isEditing) {
         list.innerHTML += `
           <tr>
-            <td><img src="${imgSrc}" class="item-img" alt="商品圖"></td>
+            <td>
+              ${imgDisplay}
+              <input type="file" id="edit-img-${item.id}" accept="image/*" style="width:100px; font-size:10px; margin-top:4px;">
+            </td>
             <td>
               <select id="edit-cat-${item.id}">
                 <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
@@ -362,7 +397,7 @@
       } else {
         list.innerHTML += `
           <tr class="${statusClass}">
-            <td><img src="${imgSrc}" class="item-img" alt="${item.name}" onerror="this.src='https://images.unsplash.com/photo-1556228720-195a672e8a03?w=100&auto=format&fit=crop&q=60'"></td>
+            <td>${imgDisplay}</td>
             <td><strong>${item.category}</strong></td>
             <td><strong>${item.brand}</strong><br>${item.name}</td>
             <td><span class="badge ${specBadge}">${item.spec}</span> <br><small>${formattedVol}</small></td>
