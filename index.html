@@ -47,7 +47,7 @@
     th { background: #f8f8f8; color: #555; }
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { background: #eee; }
-    .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; display: inline-block; }
+    .badge { padding: 3px 6px; border-radius: 8px; font-size: 11px; font-weight: bold; display: inline-block; margin-left: 4px; }
     .badge-full { background: #e3f2fd; color: #1976d2; }
     .badge-sample { background: #f3e5f5; color: #7b1fa2; }
     .status-expired { background-color: #ffebee; color: #c62828; font-weight: bold; }
@@ -91,7 +91,8 @@
           <option value="化妝水">化妝水</option>
           <option value="精華液">精華液</option>
           <option value="乳液">乳液</option>
-          <option value="卸妝/清潔">卸妝/清潔</option>
+          <option value="洗面乳">洗面乳</option>
+          <option value="卸妝水">卸妝水</option>
           <option value="底妝/彩妝">底妝/彩妝</option>
           <option value="其他">其他</option>
         </select>
@@ -100,7 +101,7 @@
           <option value="試用包">試用包</option>
           <option value="小樣">小樣</option>
         </select>
-        <input type="number" id="volume" step="any" placeholder="容量 (數字, 例: 150)">
+        <input type="text" id="volume" placeholder="容量/單位 (例: 150ml 或 50g)">
         <input type="number" id="quantity" placeholder="數量" value="1" min="1" required>
         <input type="date" id="expiry" required>
         <input type="url" id="imageUrl" placeholder="圖片網址 (貼上圖片連結)">
@@ -128,7 +129,7 @@
           <th>照片</th>
           <th class="sortable" onclick="setSort('category')">種類 <span id="sort-category">⇅</span></th>
           <th class="sortable" onclick="setSort('name')">品牌 / 品名 <span id="sort-name">⇅</span></th>
-          <th>規格/容量</th>
+          <th>容量</th>
           <th>數量</th>
           <th class="sortable" onclick="setSort('expiry')">有效期限 / 倒數天數 <span id="sort-expiry">⇅</span></th>
           <th>操作</th>
@@ -149,21 +150,11 @@
     '化妝水': 1,
     '精華液': 2,
     '乳液': 3,
-    '卸妝/清潔': 4,
-    '底妝/彩妝': 5,
-    '其他': 6
+    '洗面乳': 4,
+    '卸妝水': 5,
+    '底妝/彩妝': 6,
+    '其他': 7
   };
-
-  function formatVolume(val) {
-    if (!val || val === '-') return '-';
-    const cleanVal = String(val).replace(/ml/gi, '').trim();
-    return cleanVal ? `${cleanVal} ml` : '-';
-  }
-
-  function getRawVolumeNum(val) {
-    if (!val || val === '-') return '';
-    return String(val).replace(/[^0-9.]/g, '');
-  }
 
   document.getElementById('itemForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -176,7 +167,7 @@
       name: document.getElementById('name').value.trim(),
       category: document.getElementById('category').value,
       spec: document.getElementById('spec').value,
-      volume: rawVol ? `${rawVol} ml` : '-',
+      volume: rawVol || '-',
       quantity: parseInt(document.getElementById('quantity').value),
       expiry: document.getElementById('expiry').value,
       imageUrl: imgUrl
@@ -201,7 +192,7 @@
       item.spec = document.getElementById(`edit-spec-${id}`).value;
       
       const editVol = document.getElementById(`edit-vol-${id}`).value.trim();
-      item.volume = editVol ? `${editVol} ml` : '-';
+      item.volume = editVol || '-';
       
       item.quantity = parseInt(document.getElementById(`edit-qty-${id}`).value);
       item.expiry = document.getElementById(`edit-exp-${id}`).value;
@@ -234,6 +225,13 @@
     renderItems();
   }
 
+  function handleImgError(el, id) {
+    const parent = el.parentElement;
+    parent.innerHTML = `
+      <div class="item-img" style="color:#e53935;">連結失效</div>
+    `;
+  }
+
   function renderItems() {
     const list = document.getElementById('itemList');
     const search = document.getElementById('searchInput').value.toLowerCase();
@@ -252,7 +250,10 @@
     list.innerHTML = '';
 
     let filtered = items.filter(item => {
+      // 相容舊資料
       if (item.category === '乳液/面霜') item.category = '乳液';
+      if (item.category === '卸妝/清潔') item.category = '洗面乳';
+      
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
       const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
       return matchSearch && matchSpec;
@@ -297,26 +298,25 @@
       }
 
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
-      const formattedVol = formatVolume(item.volume);
-      const rawVolNum = getRawVolumeNum(item.volume);
       
       const imgDisplay = item.imageUrl 
-        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'item-img\\'>連結失效</div>';">` 
+        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this, ${item.id})">` 
         : `<div class="item-img">無照片</div>`;
 
       if (isEditing) {
         list.innerHTML += `
           <tr>
             <td>
-              ${imgDisplay}
-              <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="圖片網址" style="margin-top:4px; font-size:11px;">
+              <div style="margin-bottom:4px;">${imgDisplay}</div>
+              <input type="url" id="edit-img-${item.id}" value="${item.imageUrl || ''}" placeholder="貼上新圖片網址" style="width:120px; font-size:11px;">
             </td>
             <td>
               <select id="edit-cat-${item.id}">
                 <option value="化妝水" ${item.category==='化妝水'?'selected':''}>化妝水</option>
                 <option value="精華液" ${item.category==='精華液'?'selected':''}>精華液</option>
                 <option value="乳液" ${item.category==='乳液'?'selected':''}>乳液</option>
-                <option value="卸妝/清潔" ${item.category==='卸妝/清潔'?'selected':''}>卸妝/清潔</option>
+                <option value="洗面乳" ${item.category==='洗面乳'?'selected':''}>洗面乳</option>
+                <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
                 <option value="底妝/彩妝" ${item.category==='底妝/彩妝'?'selected':''}>底妝/彩妝</option>
                 <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
               </select>
@@ -324,14 +324,14 @@
             <td>
               <input type="text" id="edit-brand-${item.id}" value="${item.brand}" style="margin-bottom:4px;" placeholder="品牌">
               <input type="text" id="edit-name-${item.id}" value="${item.name}" placeholder="品名">
-            </td>
-            <td>
-              <select id="edit-spec-${item.id}" style="margin-bottom:4px;">
+              <select id="edit-spec-${item.id}" style="margin-top:4px;">
                 <option value="正貨" ${item.spec==='正貨'?'selected':''}>正貨</option>
                 <option value="試用包" ${item.spec==='試用包'?'selected':''}>試用包</option>
                 <option value="小樣" ${item.spec==='小樣'?'selected':''}>小樣</option>
               </select>
-              <input type="number" id="edit-vol-${item.id}" value="${rawVolNum}" step="any" placeholder="容量 (ml)">
+            </td>
+            <td>
+              <input type="text" id="edit-vol-${item.id}" value="${item.volume === '-' ? '' : item.volume}" placeholder="容量 (例: 150ml)">
             </td>
             <td>
               <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" style="width:70px;">
@@ -350,8 +350,11 @@
           <tr class="${statusClass}">
             <td>${imgDisplay}</td>
             <td><strong>${item.category}</strong></td>
-            <td><strong>${item.brand}</strong><br>${item.name}</td>
-            <td><span class="badge ${specBadge}">${item.spec}</span> <br><small>${formattedVol}</small></td>
+            <td>
+              <strong>${item.brand}</strong><br>
+              ${item.name} <span class="badge ${specBadge}">${item.spec}</span>
+            </td>
+            <td>${item.volume}</td>
             <td>${item.quantity}</td>
             <td>${item.expiry}${daysNote}</td>
             <td>
