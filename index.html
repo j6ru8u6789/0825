@@ -321,6 +321,21 @@
       <input type="text" id="searchInput" list="searchBrandOptions" placeholder="🔍 搜尋/選擇品牌品名..." oninput="renderItems()">
       <datalist id="searchBrandOptions"></datalist>
     </div>
+    <!-- 新增種類篩選選單 -->
+    <select id="filterCategory" onchange="renderItems()" style="flex: 1; min-width: 90px;">
+      <option value="ALL">全部種類</option>
+      <option value="化妝水">化妝水</option>
+      <option value="精華液">精華液</option>
+      <option value="乳液">乳液</option>
+      <option value="洗面乳">洗面乳</option>
+      <option value="卸妝水">卸妝水</option>
+      <option value="去角質">去角質</option>
+      <option value="面膜">面膜</option>
+      <option value="棉片">棉片</option>
+      <option value="隔離霜">隔離霜</option>
+      <option value="口紅">口紅</option>
+      <option value="眼影">眼影</option>
+    </select>
     <select id="filterSpec" onchange="renderItems()" style="flex: 1; min-width: 90px;">
       <option value="ALL">全部規格</option>
       <option value="正貨">正貨</option>
@@ -577,6 +592,7 @@
   function renderItems() {
     const list = document.getElementById('itemList');
     const search = document.getElementById('searchInput').value.toLowerCase();
+    const filterCat = document.getElementById('filterCategory').value;
     const filterSpec = document.getElementById('filterSpec').value;
     const isMobile = window.innerWidth <= 600;
     
@@ -597,8 +613,9 @@
       if (currentTab === 'MAKEUP' && !makeupCategories.includes(item.category)) return false;
 
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
+      const matchCat = filterCat === 'ALL' || item.category === filterCat;
       const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
-      return matchSearch && matchSpec;
+      return matchSearch && matchCat && matchSpec;
     });
 
     filtered.sort((a, b) => {
