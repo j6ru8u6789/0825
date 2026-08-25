@@ -42,6 +42,23 @@
     button.btn-add:hover { opacity: 0.9; }
     .filter-bar { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     
+    /* 備份按鈕區塊 */
+    .backup-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-bottom: 15px;
+    }
+    .btn-backup {
+      width: auto;
+      padding: 8px 14px;
+      font-size: 12px;
+      background: #795548;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
     th { background: #f8f8f8; color: #555; }
@@ -53,7 +70,6 @@
     .status-expired { background-color: #ffebee; color: #c62828; font-weight: bold; }
     .status-warning { background-color: #fff8e1; color: #f57f17; font-weight: bold; }
     
-    /* 圖片縮圖樣式 */
     .item-img {
       width: 55px;
       height: 55px;
@@ -68,7 +84,6 @@
       color: #999;
     }
 
-    /* 按鈕樣式 */
     .btn-action { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
     .btn-edit { background: #2196f3; }
     .btn-save { background: #4caf50; }
@@ -108,6 +123,13 @@
       </div>
       <button type="submit" class="btn-add">新增至庫存</button>
     </form>
+  </div>
+
+  <!-- 備份與資料轉移按鈕 -->
+  <div class="backup-bar">
+    <button class="btn-backup" onclick="exportData()">📤 匯出資料 (備份至檔案)</button>
+    <button class="btn-backup" onclick="document.getElementById('importFile').click()">📥 匯入資料 (從檔案載入)</button>
+    <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
   </div>
 
   <!-- 篩選與搜尋 -->
@@ -178,6 +200,46 @@
     this.reset();
   });
 
+  // 匯出資料成 JSON 檔案
+  function exportData() {
+    if (items.length === 0) {
+      alert('目前沒有任何資料可匯出！');
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `joyce_cosmetics_${new Date().toISOString().slice(0,10)}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  // 從 JSON 檔案匯入資料
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedItems = JSON.parse(e.target.result);
+        if (Array.isArray(importedItems)) {
+          if (confirm('匯入檔案將會覆蓋當前裝置上的資料，確定繼續嗎？')) {
+            items = importedItems;
+            saveAndRender();
+            alert('資料匯入成功！');
+          }
+        } else {
+          alert('檔案格式不符合！');
+        }
+      } catch (err) {
+        alert('無法讀取該檔案，請確保選擇正確的 JSON 備份檔。');
+      }
+    };
+    reader.readAsText(file);
+  }
+
   function startEdit(id) {
     editingId = id;
     renderItems();
@@ -227,9 +289,7 @@
 
   function handleImgError(el, id) {
     const parent = el.parentElement;
-    parent.innerHTML = `
-      <div class="item-img" style="color:#e53935;">連結失效</div>
-    `;
+    parent.innerHTML = `<div class="item-img" style="color:#e53935;">連結失效</div>`;
   }
 
   function renderItems() {
@@ -250,7 +310,6 @@
     list.innerHTML = '';
 
     let filtered = items.filter(item => {
-      // 相容舊資料
       if (item.category === '乳液/面霜') item.category = '乳液';
       if (item.category === '卸妝/清潔') item.category = '洗面乳';
       
