@@ -89,7 +89,7 @@
     .badge-sample { background: #f3e5f5; color: #7b1fa2; }
     .badge-cat { background: #fff3e0; color: #e65100; margin-right: 4px; }
     
-    /* 效期警示樣式 (半年內紅字) */
+    /* 效期警示樣式 */
     .status-expired { background-color: #ffebee !important; border-left: 4px solid #c62828 !important; }
     .status-warning { background-color: #fff8e1 !important; border-left: 4px solid #e53935 !important; }
 
@@ -112,7 +112,7 @@
     th.sortable { cursor: pointer; user-select: none; }
     th.sortable:hover { background: #eee; }
 
-    /* 📱 手機版卡片式排版 (高直觀化) */
+    /* 📱 手機版卡片式排版 */
     @media (max-width: 600px) {
       table, thead, tbody, th, td, tr { display: block; }
       thead { display: none; }
@@ -160,10 +160,15 @@
         border-radius: 6px;
       }
 
-      .mobile-bottom-actions {
+      .mobile-expiry-row {
         display: flex;
-        justify-content: flex-end;
-        margin-top: 6px;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+        padding: 4px 8px;
+        background: #fafafa;
+        border-radius: 6px;
+        font-size: 12px;
       }
     }
   </style>
@@ -180,7 +185,7 @@
     <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
   </div>
 
-  <!-- 新增商品表單 (精簡區域) -->
+  <!-- 新增商品表單 -->
   <div class="card" style="padding: 10px 12px;">
     <details>
       <summary style="font-weight: bold; cursor: pointer; color: var(--primary); font-size: 14px;">➕ 新增品項 (點擊展開/收合)</summary>
@@ -234,8 +239,9 @@
       <option value="小樣">小樣</option>
     </select>
     <select id="mobileSort" onchange="changeSort(this.value)" style="flex: 1; min-width: 100px;">
-      <option value="category">依類別排序</option>
+      <option value="category">依種類排序</option>
       <option value="brand">依品牌排序</option>
+      <option value="name">依品名排序</option>
       <option value="expiry">依效期排序</option>
     </select>
   </div>
@@ -270,7 +276,6 @@
     '卸妝水': 5, '隔離霜': 6, '口紅': 7, '眼影': 8, '面膜': 9, '其他': 10
   };
 
-  // 格式化容量 (未寫單位自動補 ml)
   function formatVolume(vol) {
     if (!vol || vol.trim() === '') return '-';
     vol = vol.trim();
@@ -448,6 +453,8 @@
         result = orderA - orderB;
       } else if (sortField === 'brand') {
         result = a.brand.localeCompare(b.brand, 'zh-TW');
+      } else if (sortField === 'name') {
+        result = a.name.localeCompare(b.name, 'zh-TW');
       } else if (sortField === 'expiry') {
         result = new Date(a.expiry) - new Date(b.expiry);
       }
@@ -464,19 +471,24 @@
 
       let statusClass = '';
       let daysNote = '';
+      let expiryTextDisplay = item.expiry;
 
-      // 小於半年 (180天) 紅字強調
+      // 效期小於半年 (180天) 日期與倒數天數皆顯示紅字
       if (diffDays < 0) {
         statusClass = 'status-expired';
         daysNote = `<span style="color:#c62828; font-weight:bold;">已過期 ${Math.abs(diffDays)} 天</span>`;
+        expiryTextDisplay = `<span style="color:#c62828; font-weight:bold;">${item.expiry}</span>`;
       } else if (diffDays === 0) {
         statusClass = 'status-warning';
         daysNote = `<span style="color:#e53935; font-weight:bold;">今天到期！</span>`;
+        expiryTextDisplay = `<span style="color:#e53935; font-weight:bold;">${item.expiry}</span>`;
       } else if (diffDays <= 180) {
         statusClass = 'status-warning';
         daysNote = `<span style="color:#e53935; font-weight:bold;">剩 ${diffDays} 天</span>`;
+        expiryTextDisplay = `<span style="color:#e53935; font-weight:bold;">${item.expiry}</span>`;
       } else {
         daysNote = `<span style="color:#666;">剩 ${diffDays} 天</span>`;
+        expiryTextDisplay = `<span style="color:#666;">${item.expiry}</span>`;
       }
 
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
@@ -486,7 +498,7 @@
         : `<div class="item-img">無照片</div>`;
 
       if (isEditing) {
-        // 編輯模式
+        // 編輯模式 (內含刪除按鈕)
         list.innerHTML += `
           <tr class="${statusClass}">
             <td colspan="7">
@@ -521,9 +533,9 @@
                   <input type="number" id="edit-qty-${item.id}" value="${item.quantity}" min="1" placeholder="數量" style="width:80px;">
                 </div>
                 <input type="date" id="edit-exp-${item.id}" value="${item.expiry}">
-                <div style="text-align:right; margin-top:4px;">
-                  <button class="btn-icon" style="background:#4caf50; color:white; border:none;" onclick="saveEdit(${item.id})">💾 儲存</button>
-                  <button class="btn-icon" style="background:#ff5252; color:white; border:none;" onclick="deleteItem(${item.id})">🗑️ 刪除</button>
+                <div style="text-align:right; margin-top:6px; display:flex; justify-content:flex-end; gap:6px;">
+                  <button class="btn-icon" style="background:#ff5252; color:white; border:none; padding:5px 10px;" onclick="deleteItem(${item.id})">🗑️ 刪除品項</button>
+                  <button class="btn-icon" style="background:#4caf50; color:white; border:none; padding:5px 10px;" onclick="saveEdit(${item.id})">💾 儲存</button>
                 </div>
               </div>
             </td>
@@ -532,7 +544,7 @@
       } else {
         // 檢視模式
         if (isMobile) {
-          // 📱 手機優化卡片
+          // 📱 手機卡片版 (效期獨立一列)
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>
@@ -553,17 +565,16 @@
                 </div>
                 <div class="mobile-meta-row">
                   <div>容量: <strong>${item.volume}</strong> | 數量: <strong>${item.quantity} 個/瓶</strong></div>
-                  <div>${daysNote}</div>
                 </div>
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; padding:0 2px;">
-                  <small style="color:#888;">效期：${item.expiry}</small>
-                  <button class="btn-icon" style="color:#d32f2f; border:none; background:transparent; font-size:11px;" onclick="deleteItem(${item.id})">🗑️ 刪除</button>
+                <div class="mobile-expiry-row">
+                  <div>效期：<strong>${expiryTextDisplay}</strong></div>
+                  <div>${daysNote}</div>
                 </div>
               </td>
             </tr>
           `;
         } else {
-          // 💻 電腦版表格
+          // 💻 電腦表格版
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>${imgDisplay}</td>
@@ -574,11 +585,10 @@
               </td>
               <td>${item.volume}</td>
               <td>${item.quantity} 個/瓶</td>
-              <td>${item.expiry} <br><small>${daysNote}</small></td>
+              <td>${expiryTextDisplay} <br><small>${daysNote}</small></td>
               <td>
                 <button class="btn-icon" onclick="copyItem(${item.id})">📋 複製</button>
                 <button class="btn-icon" onclick="startEdit(${item.id})">✏️ 編輯</button>
-                <button class="btn-icon" style="color:#d32f2f;" onclick="deleteItem(${item.id})">🗑️ 刪除</button>
               </td>
             </tr>
           `;
