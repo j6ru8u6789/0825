@@ -137,7 +137,7 @@
 
       .mobile-title-area {
         flex: 1;
-        padding-right: 55px; /* 留出右上角按鈕空間 */
+        padding-right: 55px;
       }
 
       .mobile-top-actions {
@@ -153,11 +153,18 @@
         justify-content: space-between;
         align-items: center;
         margin-top: 6px;
-        font-size: 12px;
+        font-size: 13px;
         color: #444;
         background: #f9f9f9;
-        padding: 5px 8px;
+        padding: 6px 10px;
         border-radius: 6px;
+      }
+
+      /* 放大手機版數量文字 */
+      .mobile-qty-text {
+        font-size: 15px;
+        font-weight: bold;
+        color: #d81b60;
       }
 
       .mobile-expiry-row {
@@ -165,7 +172,7 @@
         justify-content: space-between;
         align-items: center;
         margin-top: 4px;
-        padding: 4px 8px;
+        padding: 6px 10px;
         background: #fafafa;
         border-radius: 6px;
         font-size: 12px;
@@ -194,11 +201,11 @@
           <div>
             <input type="text" id="brand" list="brandOptions" placeholder="品牌 (可選或手動輸入)" required>
             <datalist id="brandOptions">
+              <option value="Torriden"></option>
+              <option value="雅漾 (Avene)"></option>
+              <option value="資生堂 (Shiseido)"></option>
               <option value="AESTURA"></option>
               <option value="BIOHEAL BOH"></option>
-              <option value="Lancôme"></option>
-              <option value="Estée Lauder"></option>
-              <option value="Kiehl's"></option>
             </datalist>
           </div>
           <input type="text" id="name" placeholder="品名" required>
@@ -544,7 +551,7 @@
       } else {
         // 檢視模式
         if (isMobile) {
-          // 📱 手機卡片版 (效期獨立一列)
+          // 📱 手機卡片版 (數量文字加大加粗)
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>
@@ -564,7 +571,8 @@
                   </div>
                 </div>
                 <div class="mobile-meta-row">
-                  <div>容量: <strong>${item.volume}</strong> | 數量: <strong>${item.quantity} 個/瓶</strong></div>
+                  <div>容量: <strong>${item.volume}</strong></div>
+                  <div>數量: <span class="mobile-qty-text">${item.quantity}</span> 個/瓶</div>
                 </div>
                 <div class="mobile-expiry-row">
                   <div>效期：<strong>${expiryTextDisplay}</strong></div>
@@ -584,7 +592,7 @@
                 ${item.name} <span class="badge ${specBadge}">${item.spec}</span>
               </td>
               <td>${item.volume}</td>
-              <td>${item.quantity} 個/瓶</td>
+              <td><strong>${item.quantity}</strong> 個/瓶</td>
               <td>${expiryTextDisplay} <br><small>${daysNote}</small></td>
               <td>
                 <button class="btn-icon" onclick="copyItem(${item.id})">📋 複製</button>
