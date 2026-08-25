@@ -84,14 +84,16 @@
     .badge-cat { background: #fff3e0; color: #e65100; margin-right: 4px; }
     
     .status-expired { background-color: #ffebee !important; border-left: 5px solid #c62828 !important; }
-    .status-warning { background-color: #fff8e1 !important; border-left: 5px solid #f57f17 !important; }
+    .status-warning { background-color: #fff8e1 !important; border-left: 5px solid #e53935 !important; }
 
-    .btn-action { padding: 6px 12px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
+    /* 按鈕樣式 */
+    .btn-action { padding: 6px 10px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; color: white; margin-right: 4px; }
     .btn-edit { background: #2196f3; }
+    .btn-copy { background: #ff9800; }
     .btn-save { background: #4caf50; }
     .btn-delete { background: #ff5252; }
 
-    /* 電腦版表格樣式 (預設) */
+    /* 電腦版表格樣式 */
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; }
     th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: middle; }
     th { background: #f8f8f8; color: #555; }
@@ -101,7 +103,7 @@
     /* 📱 手機版專屬 RWD 響應式佈局 (卡片化) */
     @media (max-width: 600px) {
       table, thead, tbody, th, td, tr { display: block; }
-      thead { display: none; } /* 隱藏傳統表頭 */
+      thead { display: none; }
 
       tr {
         background: white;
@@ -117,7 +119,6 @@
         border: none;
       }
 
-      /* 手機版卡片內部排版 */
       .mobile-card-header {
         display: flex;
         gap: 12px;
@@ -169,7 +170,10 @@
           <option value="乳液">乳液</option>
           <option value="洗面乳">洗面乳</option>
           <option value="卸妝水">卸妝水</option>
-          <option value="底妝/彩妝">底妝/彩妝</option>
+          <option value="隔離霜">隔離霜</option>
+          <option value="口紅">口紅</option>
+          <option value="眼影">眼影</option>
+          <option value="面膜">面膜</option>
           <option value="其他">其他</option>
         </select>
         <select id="spec">
@@ -235,8 +239,11 @@
     '乳液': 3,
     '洗面乳': 4,
     '卸妝水': 5,
-    '底妝/彩妝': 6,
-    '其他': 7
+    '隔離霜': 6,
+    '口紅': 7,
+    '眼影': 8,
+    '面膜': 9,
+    '其他': 10
   };
 
   document.getElementById('itemForm').addEventListener('submit', function(e) {
@@ -302,6 +309,19 @@
   function startEdit(id) {
     editingId = id;
     renderItems();
+  }
+
+  function copyItem(id) {
+    const item = items.find(i => i.id === id);
+    if (item) {
+      const copiedItem = {
+        ...item,
+        id: Date.now(),
+        quantity: 1 // 複製時預設數量為 1
+      };
+      items.push(copiedItem);
+      saveAndRender();
+    }
   }
 
   function saveEdit(id) {
@@ -370,8 +390,10 @@
     list.innerHTML = '';
 
     let filtered = items.filter(item => {
+      // 舊資料類別轉移
       if (item.category === '乳液/面霜') item.category = '乳液';
       if (item.category === '卸妝/清潔') item.category = '洗面乳';
+      if (item.category === '底妝/彩妝') item.category = '隔離霜';
       
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
       const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
@@ -403,15 +425,16 @@
       let statusClass = '';
       let daysNote = '';
 
+      // 效期門檻：小於 180 天 (約半年) 即標示紅字警示
       if (diffDays < 0) {
         statusClass = 'status-expired';
         daysNote = `<span style="color:#c62828; font-weight:bold;">已過期 ${Math.abs(diffDays)} 天</span>`;
       } else if (diffDays === 0) {
         statusClass = 'status-warning';
-        daysNote = `<span style="color:#f57f17; font-weight:bold;">今天到期！</span>`;
-      } else if (diffDays <= 90) {
+        daysNote = `<span style="color:#e53935; font-weight:bold;">今天到期！</span>`;
+      } else if (diffDays <= 180) {
         statusClass = 'status-warning';
-        daysNote = `<span style="color:#f57f17; font-weight:bold;">剩 ${diffDays} 天</span>`;
+        daysNote = `<span style="color:#e53935; font-weight:bold;">剩 ${diffDays} 天</span>`;
       } else {
         daysNote = `<span style="color:#666;">剩 ${diffDays} 天</span>`;
       }
@@ -439,7 +462,10 @@
                     <option value="乳液" ${item.category==='乳液'?'selected':''}>乳液</option>
                     <option value="洗面乳" ${item.category==='洗面乳'?'selected':''}>洗面乳</option>
                     <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
-                    <option value="底妝/彩妝" ${item.category==='底妝/彩妝'?'selected':''}>底妝/彩妝</option>
+                    <option value="隔離霜" ${item.category==='隔離霜'?'selected':''}>隔離霜</option>
+                    <option value="口紅" ${item.category==='口紅'?'selected':''}>口紅</option>
+                    <option value="眼影" ${item.category==='眼影'?'selected':''}>眼影</option>
+                    <option value="面膜" ${item.category==='面膜'?'selected':''}>面膜</option>
                     <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
                   </select>
                   <select id="edit-spec-${item.id}">
@@ -464,9 +490,9 @@
           </tr>
         `;
       } else {
-        // 正常檢視模式（自動兼顧電腦與手機）
+        // 檢視模式
         if (isMobile) {
-          // 📱 手機版專屬卡片 HTML
+          // 📱 手機卡片版
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>
@@ -489,13 +515,14 @@
                   <small style="color:#888;">效期：${item.expiry}</small>
                 </div>
                 <div class="mobile-actions">
-                  <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯品項</button>
+                  <button class="btn-action btn-copy" onclick="copyItem(${item.id})">📋 複製</button>
+                  <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯</button>
                 </div>
               </td>
             </tr>
           `;
         } else {
-          // 💻 電腦版表格 HTML
+          // 💻 電腦表格版
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>${imgDisplay}</td>
@@ -508,6 +535,7 @@
               <td>${item.quantity}</td>
               <td>${item.expiry} <br><small>${daysNote}</small></td>
               <td>
+                <button class="btn-action btn-copy" onclick="copyItem(${item.id})">📋 複製</button>
                 <button class="btn-action btn-edit" onclick="startEdit(${item.id})">✏️ 編輯</button>
               </td>
             </tr>
@@ -517,9 +545,7 @@
     });
   }
 
-  // 監聽螢幕寬度變化自動切換排版
   window.addEventListener('resize', renderItems);
-
   renderItems();
 </script>
 </body>
