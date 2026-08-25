@@ -29,6 +29,34 @@
       margin-bottom: 12px; 
     }
 
+    /* 分頁頁籤 (保養/彩妝/全部) */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      background: #eee;
+      padding: 4px;
+      border-radius: 10px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 0;
+      text-align: center;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: bold;
+      color: #666;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
     /* 緊湊型新增表單 */
     .form-grid { 
       display: grid; 
@@ -160,7 +188,6 @@
         border-radius: 6px;
       }
 
-      /* 放大手機版數量文字 */
       .mobile-qty-text {
         font-size: 15px;
         font-weight: bold;
@@ -192,6 +219,13 @@
     <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importData(event)">
   </div>
 
+  <!-- 分頁頁籤：保養/彩妝/全部 -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-ALL" onclick="switchTab('ALL')">全部</button>
+    <button class="tab-btn" id="tab-SKINCARE" onclick="switchTab('SKINCARE')">🧴 保養品</button>
+    <button class="tab-btn" id="tab-MAKEUP" onclick="switchTab('MAKEUP')">💄 彩妝品</button>
+  </div>
+
   <!-- 新增商品表單 -->
   <div class="card" style="padding: 10px 12px;">
     <details>
@@ -199,14 +233,8 @@
       <form id="itemForm" style="margin-top: 10px;">
         <div class="form-grid">
           <div>
-            <input type="text" id="brand" list="brandOptions" placeholder="品牌 (可選或手動輸入)" required>
-            <datalist id="brandOptions">
-              <option value="Torriden"></option>
-              <option value="雅漾 (Avene)"></option>
-              <option value="資生堂 (Shiseido)"></option>
-              <option value="AESTURA"></option>
-              <option value="BIOHEAL BOH"></option>
-            </datalist>
+            <input type="text" id="brand" list="brandOptions" placeholder="品牌 (可選擇或直接輸入)" required>
+            <datalist id="brandOptions"></datalist>
           </div>
           <input type="text" id="name" placeholder="品名" required>
           <select id="category">
@@ -215,10 +243,11 @@
             <option value="乳液">乳液</option>
             <option value="洗面乳">洗面乳</option>
             <option value="卸妝水">卸妝水</option>
+            <option value="去角質">去角質</option>
+            <option value="面膜">面膜</option>
             <option value="隔離霜">隔離霜</option>
             <option value="口紅">口紅</option>
             <option value="眼影">眼影</option>
-            <option value="面膜">面膜</option>
             <option value="其他">其他</option>
           </select>
           <select id="spec">
@@ -236,7 +265,7 @@
     </details>
   </div>
 
-  <!-- 篩選、搜尋與手機排序 -->
+  <!-- 篩選、搜尋與排序 -->
   <div class="filter-bar">
     <input type="text" id="searchInput" placeholder="🔍 搜尋品牌/品名..." oninput="renderItems()" style="flex: 2; min-width: 130px;">
     <select id="filterSpec" onchange="renderItems()" style="flex: 1; min-width: 90px;">
@@ -246,10 +275,10 @@
       <option value="小樣">小樣</option>
     </select>
     <select id="mobileSort" onchange="changeSort(this.value)" style="flex: 1; min-width: 100px;">
+      <option value="expiry" selected>依效期排序</option>
       <option value="category">依種類排序</option>
       <option value="brand">依品牌排序</option>
       <option value="name">依品名排序</option>
-      <option value="expiry">依效期排序</option>
     </select>
   </div>
 
@@ -274,14 +303,31 @@
 
 <script>
   let items = JSON.parse(localStorage.getItem('cosmetic_items')) || [];
+  let customBrands = JSON.parse(localStorage.getItem('cosmetic_brands')) || [
+    "Torriden", "雅漾 (Avene)", "資生堂 (Shiseido)", "AESTURA", "BIOHEAL BOH"
+  ];
+
   let editingId = null;
-  let sortField = 'category';
+  let currentTab = 'ALL';
+  let sortField = 'expiry'; // 預設依效期排序
   let sortAsc = true;
 
   const categoryOrder = {
     '化妝水': 1, '精華液': 2, '乳液': 3, '洗面乳': 4,
-    '卸妝水': 5, '隔離霜': 6, '口紅': 7, '眼影': 8, '面膜': 9, '其他': 10
+    '卸妝水': 5, '去角質': 6, '面膜': 7, '隔離霜': 8,
+    '口紅': 9, '眼影': 10, '其他': 11
   };
+
+  const skincareCategories = ['化妝水', '精華液', '乳液', '洗面乳', '卸妝水', '去角質', '面膜'];
+  const makeupCategories = ['隔離霜', '口紅', '眼影'];
+
+  function updateBrandDatalist() {
+    const datalist = document.getElementById('brandOptions');
+    datalist.innerHTML = '';
+    customBrands.forEach(b => {
+      datalist.innerHTML += `<option value="${b}"></option>`;
+    });
+  }
 
   function formatVolume(vol) {
     if (!vol || vol.trim() === '') return '-';
@@ -296,10 +342,18 @@
     e.preventDefault();
     const rawVol = document.getElementById('volume').value;
     const imgUrl = document.getElementById('imageUrl').value.trim();
+    const brandName = document.getElementById('brand').value.trim();
+
+    // 動態記憶新品牌
+    if (brandName && !customBrands.includes(brandName)) {
+      customBrands.push(brandName);
+      localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
+      updateBrandDatalist();
+    }
 
     const newItem = {
       id: Date.now(),
-      brand: document.getElementById('brand').value.trim(),
+      brand: brandName,
       name: document.getElementById('name').value.trim(),
       category: document.getElementById('category').value,
       spec: document.getElementById('spec').value,
@@ -313,6 +367,13 @@
     saveAndRender();
     this.reset();
   });
+
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    renderItems();
+  }
 
   function exportData() {
     if (items.length === 0) {
@@ -339,6 +400,16 @@
         if (Array.isArray(importedItems)) {
           if (confirm('匯入檔案將會覆蓋當前裝置上的資料，確定繼續嗎？')) {
             items = importedItems;
+            
+            // 匯入時同步自動記錄所有品牌的歷史
+            items.forEach(i => {
+              if (i.brand && !customBrands.includes(i.brand)) {
+                customBrands.push(i.brand);
+              }
+            });
+            localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
+            updateBrandDatalist();
+
             saveAndRender();
             alert('資料匯入成功！');
           }
@@ -373,7 +444,8 @@
   function saveEdit(id) {
     const item = items.find(i => i.id === id);
     if (item) {
-      item.brand = document.getElementById(`edit-brand-${id}`).value.trim();
+      const newBrand = document.getElementById(`edit-brand-${id}`).value.trim();
+      item.brand = newBrand;
       item.name = document.getElementById(`edit-name-${id}`).value.trim();
       item.category = document.getElementById(`edit-cat-${id}`).value;
       item.spec = document.getElementById(`edit-spec-${id}`).value;
@@ -384,6 +456,12 @@
       item.quantity = parseInt(document.getElementById(`edit-qty-${id}`).value);
       item.expiry = document.getElementById(`edit-exp-${id}`).value;
       item.imageUrl = document.getElementById(`edit-img-${id}`).value.trim();
+
+      if (newBrand && !customBrands.includes(newBrand)) {
+        customBrands.push(newBrand);
+        localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
+        updateBrandDatalist();
+      }
     }
     editingId = null;
     saveAndRender();
@@ -443,10 +521,11 @@
     list.innerHTML = '';
 
     let filtered = items.filter(item => {
-      if (item.category === '乳液/面霜') item.category = '乳液';
-      if (item.category === '卸妝/清潔') item.category = '洗面乳';
-      if (item.category === '底妝/彩妝') item.category = '隔離霜';
-      
+      // 分頁頁籤篩選
+      if (currentTab === 'SKINCARE' && !skincareCategories.includes(item.category)) return false;
+      if (currentTab === 'MAKEUP' && !makeupCategories.includes(item.category)) return false;
+
+      // 關鍵字與規格篩選
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
       const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
       return matchSearch && matchSpec;
@@ -480,7 +559,6 @@
       let daysNote = '';
       let expiryTextDisplay = item.expiry;
 
-      // 效期小於半年 (180天) 日期與倒數天數皆顯示紅字
       if (diffDays < 0) {
         statusClass = 'status-expired';
         daysNote = `<span style="color:#c62828; font-weight:bold;">已過期 ${Math.abs(diffDays)} 天</span>`;
@@ -505,7 +583,6 @@
         : `<div class="item-img">無照片</div>`;
 
       if (isEditing) {
-        // 編輯模式 (內含刪除按鈕)
         list.innerHTML += `
           <tr class="${statusClass}">
             <td colspan="7">
@@ -521,10 +598,11 @@
                     <option value="乳液" ${item.category==='乳液'?'selected':''}>乳液</option>
                     <option value="洗面乳" ${item.category==='洗面乳'?'selected':''}>洗面乳</option>
                     <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
+                    <option value="去角質" ${item.category==='去角質'?'selected':''}>去角質</option>
+                    <option value="面膜" ${item.category==='面膜'?'selected':''}>面膜</option>
                     <option value="隔離霜" ${item.category==='隔離霜'?'selected':''}>隔離霜</option>
                     <option value="口紅" ${item.category==='口紅'?'selected':''}>口紅</option>
                     <option value="眼影" ${item.category==='眼影'?'selected':''}>眼影</option>
-                    <option value="面膜" ${item.category==='面膜'?'selected':''}>面膜</option>
                     <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
                   </select>
                   <select id="edit-spec-${item.id}">
@@ -549,9 +627,7 @@
           </tr>
         `;
       } else {
-        // 檢視模式
         if (isMobile) {
-          // 📱 手機卡片版 (數量文字加大加粗)
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>
@@ -582,7 +658,6 @@
             </tr>
           `;
         } else {
-          // 💻 電腦表格版
           list.innerHTML += `
             <tr class="${statusClass}">
               <td>${imgDisplay}</td>
@@ -605,6 +680,7 @@
     });
   }
 
+  updateBrandDatalist();
   window.addEventListener('resize', renderItems);
   renderItems();
 </script>
