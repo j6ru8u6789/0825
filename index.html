@@ -286,10 +286,10 @@
             <option value="卸妝水">卸妝水</option>
             <option value="去角質">去角質</option>
             <option value="面膜">面膜</option>
+            <option value="棉片">棉片</option>
             <option value="隔離霜">隔離霜</option>
             <option value="口紅">口紅</option>
             <option value="眼影">眼影</option>
-            <option value="其他">其他</option>
           </select>
           <select id="spec">
             <option value="正貨">正貨</option>
@@ -367,11 +367,11 @@
 
   const categoryOrder = {
     '化妝水': 1, '精華液': 2, '乳液': 3, '洗面乳': 4,
-    '卸妝水': 5, '去角質': 6, '面膜': 7, '隔離霜': 8,
-    '口紅': 9, '眼影': 10, '其他': 11
+    '卸妝水': 5, '去角質': 6, '面膜': 7, '棉片': 8,
+    '隔離霜': 9, '口紅': 10, '眼影': 11
   };
 
-  const skincareCategories = ['化妝水', '精華液', '乳液', '洗面乳', '卸妝水', '去角質', '面膜'];
+  const skincareCategories = ['化妝水', '精華液', '乳液', '洗面乳', '卸妝水', '去角質', '面膜', '棉片'];
   const makeupCategories = ['隔離霜', '口紅', '眼影'];
 
   function updateBrandDatalist() {
@@ -557,7 +557,6 @@
     renderItems();
   }
 
-  // 處理圖片動態 HTML 生成
   function getImgHTML(item) {
     if (!item.imageUrl || item.imageUrl.trim() === '') {
       return `
@@ -669,10 +668,10 @@
                     <option value="卸妝水" ${item.category==='卸妝水'?'selected':''}>卸妝水</option>
                     <option value="去角質" ${item.category==='去角質'?'selected':''}>去角質</option>
                     <option value="面膜" ${item.category==='面膜'?'selected':''}>面膜</option>
+                    <option value="棉片" ${item.category==='棉片'?'selected':''}>棉片</option>
                     <option value="隔離霜" ${item.category==='隔離霜'?'selected':''}>隔離霜</option>
                     <option value="口紅" ${item.category==='口紅'?'selected':''}>口紅</option>
                     <option value="眼影" ${item.category==='眼影'?'selected':''}>眼影</option>
-                    <option value="其他" ${item.category==='其他'?'selected':''}>其他</option>
                   </select>
                   <select id="edit-spec-${item.id}">
                     <option value="正貨" ${item.spec==='正貨'?'selected':''}>正貨</option>
