@@ -95,25 +95,44 @@
       border-radius: 4px;
     }
 
-    /* 圖片縮圖樣式 */
-    .item-img {
+    /* 圖片縮圖與失效按鈕樣式 */
+    .img-box {
       width: 55px;
       height: 55px;
-      object-fit: cover;
       border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .item-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
       border: 1px solid #eee;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+
+    .img-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      border: 1px dashed #ccc;
       background: #f8f8f8;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       font-size: 10px;
-      color: #999;
-      flex-shrink: 0;
+      color: #888;
+      cursor: pointer;
+      box-sizing: border-box;
     }
 
-    .img-error-btn {
-      width: 55px;
-      height: 55px;
+    .img-error-box {
+      width: 100%;
+      height: 100%;
       border-radius: 8px;
       border: 1px solid #ffcdd2;
       background: #ffebee;
@@ -125,12 +144,11 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      padding: 2px;
       text-align: center;
+      padding: 2px;
       box-sizing: border-box;
-      flex-shrink: 0;
     }
-    .img-error-btn:hover {
+    .img-error-box:hover {
       background: #ffcdd2;
     }
 
@@ -335,7 +353,7 @@
 
   let editingId = null;
   let currentTab = 'ALL';
-  let sortField = 'expiry'; // 預設依效期排序
+  let sortField = 'expiry';
   let sortAsc = true;
 
   const categoryOrder = {
@@ -354,7 +372,6 @@
     datalist.innerHTML = '';
     searchDatalist.innerHTML = '';
 
-    // 合併預設品牌與實際品項中出現過的品牌
     const allBrandsSet = new Set([...customBrands]);
     items.forEach(item => {
       if (item.brand && item.brand.trim() !== '') {
@@ -438,7 +455,6 @@
         if (Array.isArray(importedItems)) {
           if (confirm('匯入檔案將會覆蓋當前裝置上的資料，確定繼續嗎？')) {
             items = importedItems;
-            
             items.forEach(i => {
               if (i.brand && !customBrands.includes(i.brand)) {
                 customBrands.push(i.brand);
@@ -446,7 +462,6 @@
             });
             localStorage.setItem('cosmetic_brands', JSON.stringify(customBrands));
             updateBrandDatalist();
-
             saveAndRender();
             alert('資料匯入成功！');
           }
@@ -468,11 +483,7 @@
   function copyItem(id) {
     const item = items.find(i => i.id === id);
     if (item) {
-      const copiedItem = {
-        ...item,
-        id: Date.now(),
-        quantity: 1
-      };
+      const copiedItem = { ...item, id: Date.now(), quantity: 1 };
       items.push(copiedItem);
       saveAndRender();
     }
@@ -535,12 +546,20 @@
     renderItems();
   }
 
-  // 圖片載入失敗處理：顯示可直接點擊修改網址的按鈕
-  function handleImgError(el, id) {
-    const parent = el.parentElement;
-    parent.innerHTML = `
-      <div class="img-error-btn" onclick="startEdit(${id})" title="點擊直接修改圖片網址">
-        ⚠️ 連結失效<br><span style="font-size:9px; text-decoration:underline;">(點此修改)</span>
+  // 處理圖片動態 HTML 生成
+  function getImgHTML(item) {
+    if (!item.imageUrl || item.imageUrl.trim() === '') {
+      return `
+        <div class="img-box" onclick="startEdit(${item.id})" title="點擊新增照片">
+          <div class="img-placeholder">無照片<br><span style="font-size:9px;">(點此新增)</span></div>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="img-box" id="img-container-${item.id}">
+        <img src="${item.imageUrl}" class="item-img" alt="照片" 
+             onerror="this.onerror=null; document.getElementById('img-container-${item.id}').innerHTML='<div class=\\'img-error-box\\' onclick=\\'startEdit(${item.id})\\' title=\\'點擊修改網址\\'>⚠️ 連結失效<br><span style=\\'font-size:9px; text-decoration:underline;\\'>點此修改</span></div>';">
       </div>
     `;
   }
@@ -564,11 +583,9 @@
     list.innerHTML = '';
 
     let filtered = items.filter(item => {
-      // 分頁頁籤篩選
       if (currentTab === 'SKINCARE' && !skincareCategories.includes(item.category)) return false;
       if (currentTab === 'MAKEUP' && !makeupCategories.includes(item.category)) return false;
 
-      // 關鍵字與規格篩選
       const matchSearch = item.brand.toLowerCase().includes(search) || item.name.toLowerCase().includes(search);
       const matchSpec = filterSpec === 'ALL' || item.spec === filterSpec;
       return matchSearch && matchSpec;
@@ -620,10 +637,7 @@
       }
 
       const specBadge = item.spec === '正貨' ? 'badge-full' : 'badge-sample';
-      
-      const imgDisplay = item.imageUrl 
-        ? `<img src="${item.imageUrl}" class="item-img" alt="照片" onerror="handleImgError(this, ${item.id})">` 
-        : `<div class="item-img" onclick="startEdit(${item.id})" style="cursor:pointer;" title="點擊新增照片網址">無照片</div>`;
+      const imgDisplay = getImgHTML(item);
 
       if (isEditing) {
         list.innerHTML += `
